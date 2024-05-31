@@ -53,7 +53,7 @@ class Generator:
 
     def text_completion(self, 
                         prompts: List[str],
-                        temperature: float = 0.0,
+                        temperature: float = 0.6,
                         top_p: float = 0.9) -> List[str]:
         """
         input is list of prompt strings, output is list of completed strings
@@ -78,7 +78,6 @@ class Generator:
             memory[:, cur_pos] = torch.where(memory[:, cur_pos] == self.spm.pad_id(), next_tokens, memory[:, cur_pos])
             over |= memory[:, cur_pos] == self.spm.eos_id()
             if all(over):
-                print('breaked')
                 break
             prev_pos = cur_pos
         

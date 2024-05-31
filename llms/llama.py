@@ -209,5 +209,22 @@ class Transformer(nn.Module):
             x = layer(x, start_position, position_encoding, mask)
         x = self.norm(x)
 
-        x = self.output(x)
+        x = self.output(x).float()
+        return x
+
+    def forward_train(self, tokens: torch.Tensor) -> torch.Tensor:
+        bsz, length = tokens.shape
+        x = self.embedding(tokens)
+        position_encoding = self.position_encoding[0: length].to(device)
+
+        mask = None
+        if length > 1:
+            mask = torch.full((length, length), float('-inf'))
+            mask = mask.triu(1).to(device)
+        
+        for layer in self.layers:
+            x = layer(x, 0, position_encoding, mask)
+        x = self.norm(x)
+
+        x = self.output(x).float()
         return x
