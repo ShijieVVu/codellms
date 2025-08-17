@@ -3,7 +3,7 @@ import os
 import torch
 from llms.config import TrainArgs as Args, CheckpointMode
 from llms.llama import Transformer
-from peft import LoraConfig, get_peft_model
+from llms.peft import LoraConfig, get_peft_model
 
 from sentencepiece import SentencePieceProcessor
 from torch.utils.data import IterableDataset, DataLoader
