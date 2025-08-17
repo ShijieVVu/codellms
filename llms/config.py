@@ -10,18 +10,17 @@ class CheckpointMode:
 @dataclass
 class TrainArgs:
     # model configs
-    dims: int = 4096
-    hidden_dims: int = 4 * 4096
-    vocab_size: int = 32016
-    num_layers: int = 32
-    num_heads: int = 32
-    num_kv_heads: int = 32
+    dims: int = 768
+    hidden_dims: int = 4 * 1024
+    vocab_size: int = 50257
+    num_layers: int = 12
+    num_heads: int = 12
+    num_kv_heads: int = 12
     multiple_of: Optional[int] = 256
-    num_layers: int = 4
 
-    max_bsz: int = 8
+    max_bsz: int = 4
     max_length: int = 1024
-    theta: float = 1000000
+    theta: float = int(1e6)
 
     # training configs
     batch_size: int = 4
