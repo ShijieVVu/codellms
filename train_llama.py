@@ -1,7 +1,6 @@
 import os
 import time
 import torch
-import tiktoken
 import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
@@ -163,17 +162,32 @@ class Llama(nn.Module):
         return torch.optim.AdamW(optim_groups, fused=True)
 
 
-init_process_group(backend='nccl')
-rank = int(os.environ['RANK'])
-world_size = int(os.environ['WORLD_SIZE'])
-device = f'cuda:{rank}'
-torch.cuda.set_device(device)
+# Check if distributed training is enabled
+use_distributed = 'RANK' in os.environ and 'WORLD_SIZE' in os.environ
+
+if use_distributed:
+    # Multi-GPU distributed training
+    init_process_group(backend='nccl')
+    rank = int(os.environ['RANK'])
+    world_size = int(os.environ['WORLD_SIZE'])
+    device = f'cuda:{rank}'
+    torch.cuda.set_device(device)
+else:
+    # Single-GPU training
+    rank = 0
+    world_size = 1
+    device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+    torch.cuda.set_device(device) if torch.cuda.is_available() else None
 
 args = Args()
 model = Llama(config=args)
 model.to(device)
-model = DDP(model)
-raw_model = model.module
+
+if use_distributed:
+    model = DDP(model)
+    raw_model = model.module
+else:
+    raw_model = model
 
 B = 8
 L = args.max_length
@@ -306,9 +320,12 @@ for step in range(max_steps):
             _, loss = model(x, y)
         loss = loss / grad_accum_steps
         loss_accum += loss.detach()
-        model.require_backward_grad_sync = micro_step == (grad_accum_steps - 1)
+        if use_distributed:
+            model.require_backward_grad_sync = micro_step == (grad_accum_steps - 1)
         loss.backward()
-    dist.all_reduce(loss_accum, op=dist.ReduceOp.AVG)
+    
+    if use_distributed:
+        dist.all_reduce(loss_accum, op=dist.ReduceOp.AVG)
     norm = torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
     # determine and set the learning rate for this iteration
     lr = get_lr(step)
@@ -325,4 +342,5 @@ for step in range(max_steps):
     if rank == 0:
         print(f"step {step:5d} | loss: {loss_accum.item():.6f} | lr {lr:.4e} | norm: {norm:.4f} | dt: {dt*1000:.2f}ms | tok/sec: {tokens_per_sec:.2f} | mfu: {100 * mfu:.2f}%")
 
-destroy_process_group()
+if use_distributed:
+    destroy_process_group()

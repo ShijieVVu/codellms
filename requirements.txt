@@ -8,7 +8,8 @@ accelerate>=0.20.0
 
 # Tokenization
 sentencepiece>=0.1.99
-tiktoken>=0.4.0
+tokenizers>=0.13.0
+regex>=2022.0.0
 
 # Parameter Efficient Fine-tuning
 peft>=0.4.0

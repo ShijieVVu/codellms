@@ -8,7 +8,7 @@ This repository contains a complete implementation of a Code Language Model base
 - **Fine-tuning**: LoRA-based parameter efficient fine-tuning
 - **Inference**: High-performance text generation with various sampling strategies
 - **Evaluation**: HumanEval benchmark integration for code generation evaluation
-- **Tokenization**: SentencePiece tokenizer support for code-specific vocabulary
+- **Tokenization**: Custom tokenizer training from scratch with BPE implementation
 
 ## 📋 Requirements
 
@@ -35,25 +35,51 @@ codellm/
 │   ├── config.py           # Configuration management
 │   ├── llama.py            # Llama model architecture
 │   ├── generate.py          # Text generation utilities
-│   └── peft.py             # Parameter efficient fine-tuning
+│   └── peft.py             # LoRA utilities (legacy)
+├── tokenizer/              # Tokenizer training from scratch
+│   ├── train.py            # Main training script
+│   ├── bpe.py              # Custom BPE implementation
+│   └── README.md           # Tokenizer documentation
 ├── train_llama.py          # Pre-training script
 ├── finetune.py             # Fine-tuning script
 ├── text_completion.py      # Inference demo
 ├── evaluate_humaneval.py   # HumanEval evaluation
+├── rlhf.py                 # RLHF implementation
 └── requirements.txt        # Dependencies
 ```
 
 ## 🎯 Usage
 
-### 1. Tokenizer Training and Inference
+### 1. Tokenizer Training from Scratch
 
-The codebase uses SentencePiece tokenizers for code-specific vocabulary. To use a custom tokenizer:
+The codebase includes a complete implementation for training tokenizers from scratch on code data. This demonstrates the core concepts of how modern tokenizers work.
+
+#### Training a Custom Tokenizer
+
+```bash
+# Navigate to tokenizer directory
+cd tokenizer
+
+# Train using HuggingFace tokenizers (recommended)
+python train.py
+
+# Or use the custom BPE implementation (educational)
+python -c "
+from bpe import Tokenizer
+tokenizer = Tokenizer(prefix='code_bpe')
+tokenizer.train(your_code_text, vocab_size=50257)
+tokenizer.save()
+"
+```
+
+#### Using the Trained Tokenizer
 
 ```python
+# Load and use the trained tokenizer
 from sentencepiece import SentencePieceProcessor
 
-# Load tokenizer
-sp_model = SentencePieceProcessor(model_file='path/to/tokenizer.model')
+# Load your custom tokenizer
+sp_model = SentencePieceProcessor(model_file='tokenizer/trained_tokenizer/code_bpe.model')
 
 # Encode text
 tokens = sp_model.encode("def hello_world(): print('Hello, World!')")
@@ -61,6 +87,13 @@ tokens = sp_model.encode("def hello_world(): print('Hello, World!')")
 # Decode tokens
 text = sp_model.decode(tokens)
 ```
+
+#### Tokenizer Features
+
+- **Custom BPE Implementation**: Educational implementation showing how tokenizers work internally
+- **HuggingFace Integration**: Production-ready training using HuggingFace tokenizers
+- **Code-Specific**: Optimized for programming language data
+- **Configurable**: Adjustable vocabulary size and special tokens
 
 ### 2. Pre-training Setup
 
